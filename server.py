@@ -4,7 +4,6 @@ import asyncio
 from mcp.server.fastmcp import FastMCP
 from mcp.server.stdio import stdio_server
 
-
 # Read Bugcrowd API credentials from environment variables
 BUGCROWD_API_USERNAME = os.getenv("BUGCROWD_API_USERNAME")
 BUGCROWD_API_PASSWORD = os.getenv("BUGCROWD_API_PASSWORD")
