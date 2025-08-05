@@ -4,6 +4,7 @@ import asyncio
 from mcp.server.fastmcp import FastMCP
 from mcp.server.stdio import stdio_server
 
+
 # Read Bugcrowd API credentials from environment variables
 BUGCROWD_API_USERNAME = os.getenv("BUGCROWD_API_USERNAME")
 BUGCROWD_API_PASSWORD = os.getenv("BUGCROWD_API_PASSWORD")
@@ -14,15 +15,36 @@ async def bugcrowd_request(method, endpoint, **kwargs):
     """
     Async helper to make authenticated requests to the Bugcrowd API.
     """
-    BUGCROWD_API_USERNAME = os.getenv("BUGCROWD_API_USERNAME")
-    BUGCROWD_API_PASSWORD = os.getenv("BUGCROWD_API_PASSWORD")
     if not BUGCROWD_API_USERNAME or not BUGCROWD_API_PASSWORD:
         raise RuntimeError("BUGCROWD_API_USERNAME and BUGCROWD_API_PASSWORD must be set in environment variables.")
     url = f"{BUGCROWD_API_BASE}{endpoint}"
     headers = kwargs.pop("headers", {})
-    headers["Accept"] = "application/vnd.bugcrowd+json"
+    headers["Accept"] = "application/vnd.bugcrowd.v4+json"
     headers["Authorization"] = f"Token {BUGCROWD_API_USERNAME}:{BUGCROWD_API_PASSWORD}"
     headers["Bugcrowd-Version"] = BUGCROWD_API_VERSION
+    
+    # Check if params is empty and remove it to avoid 400 bad request
+    params = kwargs.get("params")
+    if params is not None:
+        # Handle different types of empty parameters
+        is_empty = False
+        
+        if isinstance(params, dict):
+            # Empty dict or dict with only empty values
+            is_empty = not params or all(not v for v in params.values())
+        elif isinstance(params, str):
+            # Empty string or whitespace-only string
+            is_empty = not params.strip()
+        elif hasattr(params, '__len__'):
+            # Any other object with length (list, tuple, etc.)
+            is_empty = len(params) == 0
+        else:
+            # Fallback for other types
+            is_empty = not params
+            
+        if is_empty:
+            kwargs.pop("params", None)
+    
     async with httpx.AsyncClient() as client:
         response = await client.request(method, url, headers=headers, **kwargs)
         response.raise_for_status()
